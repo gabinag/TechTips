@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { db } from "../.firebase/config";
+import { db } from "../firebase/config";
 import {
     collection, 
     query,
     orderBy,
-    onSnapchat,
+    onSnapshot,
     where,
 } from "firebase/firestore"
 
@@ -18,17 +18,24 @@ export const useFetchDocuments = (docCollection, search = null, uid = null) => {
 
     useEffect(() => {
         async function loadData() {
-            if(cancelled) return;
+            if(cancelled) {
+                return;
+            }
 
             setLoading(true);
 
-            const collectionRef = await collection(db, docCollection)
+            const collectionRef = await collection(db, docCollection);
 
             try {
                 let q;
-                q = await query(collectionRef, orderBy("createdAt", "desc"));
-                
-                await onSnapchat(q, (querySnapshot) => {
+
+                if(search) {
+                    q = await query(collectionRef, where("tags", "array-contains", search), orderBy("createdAt", "desc"));
+                } else {
+                    q = await query(collectionRef, orderBy("createdAt", "desc"));
+                }
+
+                await onSnapshot(q, (querySnapshot) => {
                     setDocuments(
                         querySnapshot.docs.map((doc) => ({
                             id: doc.id,
@@ -51,7 +58,7 @@ export const useFetchDocuments = (docCollection, search = null, uid = null) => {
         return () => setCancelled(true);
     }, []);
 
-    return documents, loading, error;
+    return {documents, loading, error};
 };
 
 
